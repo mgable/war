@@ -28,11 +28,22 @@ War.Deck = (function(){
 		});
 	}
 
-	function compare(cards){}
+	function compare(cards){
+		var rankings = cards.map(function(v,i,a){
+				return values.indexOf(v);
+			}),
+			winner = Math.min.apply(Math, rankings),
+			results = rankings.map(function(v,i,a){
+				return v === winner ? true : false;
+			});
+	
+		return results;
+	}
 
 	return {
 		cards: cards,
-		deal: deal
+		deal: deal,
+		compare: compare
 	};
 
 })();
@@ -55,5 +66,7 @@ var player_2 = new War.Player();
 
 War.Deck.deal([player_1, player_2]);
 
-console.info(player_1.hand);
-console.info(player_2.hand);
+console.info(War.Deck.compare(["8", "Q", "A", "A"]));
+
+//console.info(player_1.hand);
+//console.info(player_2.hand)
