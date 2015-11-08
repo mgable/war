@@ -34,7 +34,7 @@ War.Deck = (function(){
 			}),
 			winner = Math.min.apply(Math, rankings),
 			results = rankings.map(function(v,i,a){
-				return v === winner ? true : false;
+				return v === winner ? 1 : 0;
 			});
 	
 		return results;
@@ -49,24 +49,62 @@ War.Deck = (function(){
 })();
 
 War.Player = (function(){
-	var constructor = function(){this.hand = [];};
+	var constructor = function(name){
+			this.hand = [];
+			this.name = name;
+		};
 
-	 constructor.prototype = {
-		turn: function(){}
-	 };
+	constructor.prototype = {
+		turn: function(){
+			return this.hand.pop();
+		},
+		returnCards: function(cards){
+			while(cards.length){
+				this.hand.unshift(cards.pop());
+			}
+		}
+	};
 
-	 return constructor;
+	return constructor;
 
 })();
 
-War.Play = (function(){})();
+War.Play = (function(){
+	var results = [],
+		winnerObj,
+		play = function(players){
+			// Look Mom! - a "Do" loop
+			do {
+				var round = [];
+				
+				players.forEach(function(player,i,a){
+					round.push(player.turn());
+					
+				});
+				
+				results = War.Deck.compare(round);
+				
+				winnerObj = players[results.indexOf(1)];
+				winnerObj.returnCards.call(winnerObj, round);
+			
+			} while (results.reduce(function(a,b){return a + b;},0) > 1);
+			
+			
+			return winnerObj.name + " has won!";
+		};
 
-var player_1 = new War.Player();
-var player_2 = new War.Player();
+	return play;
+})();
+
+var player_1 = new War.Player("Joe");
+var player_2 = new War.Player("Ralph");
 
 War.Deck.deal([player_1, player_2]);
 
-console.info(War.Deck.compare(["8", "Q", "A", "A"]));
+War.Play([player_1, player_2]);
 
+
+
+//console.info(War.Deck.compare(["8", "Q", "A", "A"]));
 //console.info(player_1.hand);
 //console.info(player_2.hand)
