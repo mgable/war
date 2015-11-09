@@ -1,53 +1,70 @@
 "use strict";
+// Namespace
 var War = {};
 
+// War.Deck represents the deck of cards used in the game
 War.Deck = (function(){
+	// values for all cards; suit will be ignored
 	var values = ["A","K","Q","J","10","9","8","7","6","5","4","3","2"],
 		cards = shuffle(create(values));
 
-	function shuffle(cards){
+	// simple shuffle method
+	function shuffle(_cards){
 		var results = [];
 
-		while(cards.length){
-			var index = Math.round(Math.random() * (cards.length - 1) );
-			results.push(cards.splice(index,1)[0]);
+		while(_cards.length){
+			var index = Math.round(Math.random() * (_cards.length - 1) );
+			results.push(_cards.splice(index,1)[0]);
 		}
 
 		return results;
 	}
 
-	function create(values){
-		return values.concat(values, values, values);
+	// make a full "deck" of cards
+	function create(_cards){
+		return _cards.concat(_cards, _cards, _cards);
 	}
 
+	// deal cards evenly to all players
 	function deal(players){
 		var start = 0;
-		cards.forEach(function(v,i,a){
-			players[start].hand.push(v);
+		cards.forEach(function(card){
+			players[start].hand.push(card);
 			start = start >= (players.length - 1) ? 0 : start + 1;
 		});
 	}
 
-	function compare(cards){
-		var rankings = cards.map(function(v,i,a){
-				return values.indexOf(v);
+	// determine which of the cards in the array is the "winner"
+	function compare(_cards){
+		var rankings = _cards.map(function(card){
+				return values.indexOf(card);
 			}),
 			winner = Math.min.apply(Math, rankings),
-			results = rankings.map(function(v,i,a){
-				return v === winner ? 1 : 0;
+			results = rankings.map(function(rank){
+				return rank === winner ? 1 : 0;
 			});
-	
+
 		return results;
 	}
 
+	// a player wins when they have all of the cards
+	function isThereAWinner(players){
+		return players.filter(function(player){
+			return player.hand.length === cards.length;
+		});
+	}
+
+	// revealing module pattern
 	return {
 		cards: cards,
 		deal: deal,
-		compare: compare
+		compare: compare,
+		isThereAWinner: isThereAWinner
 	};
 
 })();
 
+// War.Player represents the players in the game
 War.Player = (function(){
 	var constructor = function(name){
 			this.hand = [];
@@ -60,7 +77,7 @@ War.Player = (function(){
 		},
 		returnCards: function(cards){
 			while(cards.length){
-				this.hand.unshift(cards.pop());
+				this.hand.unshift(cards.reverse().pop());
 			}
 		}
 	};
@@ -69,42 +86,77 @@ War.Player = (function(){
 
 })();
 
+// War.Play is the test harness
 War.Play = (function(){
 	var results = [],
-		winnerObj,
+		winner,
+		loser = false,
+		limit = 10000,
+		counter = 0,
 		play = function(players){
-			// Look Mom! - a "Do" loop
-			do {
-				var round = [];
+
+			// it seems to be possible to have a "scratch game" (no winner) so a limit is used 
+			while(counter < limit){
+				var queue = [];
+				counter++;
+				do {
+					var round = [];
+
+					// each player addes a card to the "round"
+					players.forEach(function(player){
+						var card = player.turn();
+						console.info(player.name + " played a " + card);
+						round.push(card);
+					});
+
+					// get the results of the round 
+					results = War.Deck.compare(round);
+
+					// determine if it is a tie or not
+					if (Math.min.apply(Math, results) !== 0){
+						console.info("Round " + counter + " was a tie!");
+
+						// add cards from the previous round to the queue
+						queue = queue.concat(round);
+
+						// add the "War" cards to the queue
+						players.forEach(function(player){
+							queue.push(player.turn());
+							// if a player runs out of cards during "War" they lose
+							if (player.hand.length === 0){
+								console.info(player.name + " has run out of cards! " + player.name + " loses in " + counter + " rounds!");
+								loser = true;
+							}
+						});
+
+					} else {
+						winner = players[results.indexOf(1)];
+						winner.returnCards(round.concat(queue));
+					}
+				 
+				} while (!loser && results.reduce(function(a,b){return a + b;},0) > 1);
+
+				 console.info(winner.name + " has won round " + counter +  "!");
 				
-				players.forEach(function(player,i,a){
-					round.push(player.turn());
-					
-				});
-				
-				results = War.Deck.compare(round);
-				
-				winnerObj = players[results.indexOf(1)];
-				winnerObj.returnCards.call(winnerObj, round);
-			
-			} while (results.reduce(function(a,b){return a + b;},0) > 1);
-			
-			
-			return winnerObj.name + " has won!";
+				var won = War.Deck.isThereAWinner(players).length ? War.Deck.isThereAWinner(players)[0] : false;
+				if (won) {console.info(won.name + " just won the GAME in " + counter + " turns!!"); return;}
+			}
+
+			console.info("There is no winner afer " + counter + " turns.");
 		};
 
 	return play;
 })();
 
-var player_1 = new War.Player("Joe");
+var player_1 = new War.Player("Larry");
 var player_2 = new War.Player("Ralph");
 
 War.Deck.deal([player_1, player_2]);
+
+//console.info(player_1.hand);
+//console.info(player_2.hand);
 
 War.Play([player_1, player_2]);
 
 
 
-//console.info(War.Deck.compare(["8", "Q", "A", "A"]));
-//console.info(player_1.hand);
-//console.info(player_2.hand)
