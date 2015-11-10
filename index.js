@@ -48,10 +48,8 @@ War.Deck = (function(){
 	}
 
 	// a player wins when they have all of the cards
-	function isThereAWinner(players){
-		return players.filter(function(player){
-			return player.hand.length ===  cards.length;
-		});
+	function isThereAWinner(player){
+		return player.hand.length ===  cards.length;
 	}
 
 	// a utility function to insert the return cards back into the deck or hand
@@ -60,17 +58,16 @@ War.Deck = (function(){
 		while(cards.length){
 			container.unshift(cards.pop());
 		}
-		return container;
+		// return container in case we want to assign it to another variable
+		return container; 
 	}
 
 	// revealing module pattern
 	return {
-		cards: cards,
 		deal: deal,
 		compare: compare,
 		isThereAWinner: isThereAWinner,
 		returnCards: returnCards
-
 	};
 
 })();
@@ -95,36 +92,44 @@ War.Player = (function(){
 // War.Play is the test harness
 War.Play = (function(){
 	var results = [],
-		winner,
+		winner = false,
 		loser = false,
-		limit = 10000,
+		limit = 3000,
 		counter = 0,
 		play = function(players){
 
+			// this is the game play engine
 			// it seems to be possible to have a "scratch game" (no winner) so a limit is used 
 			while(counter < limit){
-				var queue = [];
-				counter++;
-				do {
-					var round = [],
-						winner;
+				// the queue holds the previous round(s) cards during "war"
+				var queue = [],
+					war = false;
 
-					// each player addes a card to the "round"
-					players.forEach(function(player){
-						var card = player.turn();
-						console.info(player.name + " played a " + card);
-						round.push(card);
-					});
+				counter++;
+				// this is the round (or turn) engine
+				do {
+					// holds all cards in current round;
+					var round = [];
+
+					// reset round winner and war
+					winner  = false;
+					war = false;
+
+					// each player adds a card to the "round"
+					round = players.map(turn);
 
 					// get the results of the round 
 					results = War.Deck.compare(round);
 
-					// determine if it is a tie or not
-					if (Math.min.apply(Math, results) !== 0){
+					// determine if the round resulted in a tie (or War)
+					war = Math.min.apply(Math, results) !== 0;
+
+					// if there is war
+					if (war){
 						console.info("Round " + counter + " was a tie!");
 
 						// add cards from the previous round to the queue
-						queue = War.Deck.returnCards(queue, round);
+						War.Deck.returnCards(queue, round);
 
 						// add the "War" cards to the queue
 						players.forEach(function(player){
@@ -134,29 +139,33 @@ War.Play = (function(){
 								loser = player;
 							}
 						});
-
+					// there is a single winner
 					} else {
 						winner = players[results.indexOf(1)];
 						War.Deck.returnCards(winner.hand, queue.concat(round));
 					}
-				 
-				} while (!loser && !winner);
+				 // continue until there is a loser or no war or there is a winner
+				} while (!loser && war && !winner);
 
 				if (!loser){
 					 console.info(winner.name + " has won round " + counter +  "!");
-					 console.info(player_1.name + " hand is " + player_1.hand);
-					 console.info(player_2.name + " hand is " + player_2.hand);
+					 players.forEach(function(player){console.info(player.name + " hand is " + player.hand);});
 					 console.info("******************************************");
 				}
 				
-				var won = War.Deck.isThereAWinner(players).length ? War.Deck.isThereAWinner(players)[0] : false;
-				if (won) {console.info(won.name + " just won the GAME in " + counter + " turns!!"); return;}
-				if (loser) {console.info(loser.name + " lost the game after running out of cards in " + counter + " turns");return;};
+				if (loser) {console.info(loser.name + " lost the game after running out of cards in " + counter + " turns");return;}
+				if (War.Deck.isThereAWinner(winner)) {console.info(winner.name + " just won the GAME in " + counter + " turns!!"); return;}
 			}
 
 			console.info("There is no winner afer " + counter + " turns.");
 
 		};
+
+		function turn(player){
+			var card = player.turn();
+			console.info(player.name + " played a " + card);
+			return card;
+		}
 
 	return play;
 })();
