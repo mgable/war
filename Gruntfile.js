@@ -42,10 +42,13 @@ module.exports = function(grunt) {
         }
     });
 
-    grunt.registerTask('default', [
-        'watch',
-        'jshint:all'
-    ]);
+    grunt.registerTask('default',  function(){
+        return grunt.task.run(['lint']);
+    });
 
-    grunt.registerTask('lint', function(){return grunt.task.run(['default']);});
+    grunt.registerTask('lint', [
+        'watch',
+        'newer:jshint:all'
+        ]
+    );
 };
