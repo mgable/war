@@ -50,9 +50,17 @@ War.Deck = (function(){
 	// a player wins when they have all of the cards
 	function isThereAWinner(players){
 		return players.filter(function(player){
-			console.info(player.name + " has " + player.hand.length, cards.length);
 			return player.hand.length ===  cards.length;
 		});
+	}
+
+	// a utility function to insert the return cards back into the deck or hand
+	function returnCards(container, _cards){
+		var cards = shuffle(_cards);
+		while(cards.length){
+			container.unshift(cards.pop());
+		}
+		return container;
 	}
 
 	// revealing module pattern
@@ -61,7 +69,8 @@ War.Deck = (function(){
 		deal: deal,
 		compare: compare,
 		isThereAWinner: isThereAWinner,
-		shuffle: shuffle
+		returnCards: returnCards
+
 	};
 
 })();
@@ -76,12 +85,6 @@ War.Player = (function(){
 	constructor.prototype = {
 		turn: function(){
 			return this.hand.pop();
-		},
-		returnCards: function(_cards){
-			var cards = War.Deck.shuffle(_cards);
-			while(cards.length){
-				this.hand.unshift(cards.pop());
-			}
 		}
 	};
 
@@ -120,21 +123,20 @@ War.Play = (function(){
 						console.info("Round " + counter + " was a tie!");
 
 						// add cards from the previous round to the queue
-						returnCards(queue, round);
+						queue = War.Deck.returnCards(queue, round);
 
 						// add the "War" cards to the queue
 						players.forEach(function(player){
 							queue.unshift(player.turn());
 							// if a player runs out of cards during "War" they lose
 							if (player.hand.length === 0){
-								console.info(player.name + " has run out of cards! " + player.name + " loses in " + counter + " turns!");
 								loser = player;
 							}
 						});
 
 					} else {
 						winner = players[results.indexOf(1)];
-						winner.returnCards(returnCards(queue, round));
+						War.Deck.returnCards(winner.hand, queue.concat(round));
 					}
 				 
 				} while (!loser && results.reduce(function(a,b){return a + b;},0) > 1);
@@ -153,13 +155,6 @@ War.Play = (function(){
 
 			console.info("There is no winner afer " + counter + " turns.");
 
-			function returnCards(container, _cards){
-				var cards = War.Deck.shuffle(_cards);
-				while(cards.length){
-					container.unshift(cards.pop());
-				}
-				return container;
-			}
 		};
 
 	return play;
