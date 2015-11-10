@@ -106,7 +106,8 @@ War.Play = (function(){
 				var queue = [];
 				counter++;
 				do {
-					var round = [];
+					var round = [],
+						winner;
 
 					// each player addes a card to the "round"
 					players.forEach(function(player){
@@ -139,7 +140,7 @@ War.Play = (function(){
 						War.Deck.returnCards(winner.hand, queue.concat(round));
 					}
 				 
-				} while (!loser && results.reduce(function(a,b){return a + b;},0) > 1);
+				} while (!loser && !winner);
 
 				if (!loser){
 					 console.info(winner.name + " has won round " + counter +  "!");
