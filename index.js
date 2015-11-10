@@ -50,7 +50,7 @@ War.Deck = (function(){
 	// a player wins when they have all of the cards
 	function isThereAWinner(players){
 		return players.filter(function(player){
-			return player.hand.length === cards.length;
+			return player.hand.length ===  (player_1.hand.length + player_2.hand.length);//cards.length;
 		});
 	}
 
@@ -59,7 +59,8 @@ War.Deck = (function(){
 		cards: cards,
 		deal: deal,
 		compare: compare,
-		isThereAWinner: isThereAWinner
+		isThereAWinner: isThereAWinner,
+		shuffle: shuffle
 	};
 
 })();
@@ -77,7 +78,7 @@ War.Player = (function(){
 		},
 		returnCards: function(cards){
 			while(cards.length){
-				this.hand.unshift(cards.reverse().pop());
+				this.hand.unshift(cards.pop());
 			}
 		}
 	};
@@ -117,11 +118,12 @@ War.Play = (function(){
 						console.info("Round " + counter + " was a tie!");
 
 						// add cards from the previous round to the queue
-						queue = queue.concat(round);
+						//queue = queue.concat(round);
+						returnCards(queue, round);
 
 						// add the "War" cards to the queue
 						players.forEach(function(player){
-							queue.push(player.turn());
+							queue.unshift(player.turn());
 							// if a player runs out of cards during "War" they lose
 							if (player.hand.length === 0){
 								console.info(player.name + " has run out of cards! " + player.name + " loses in " + counter + " rounds!");
@@ -131,18 +133,31 @@ War.Play = (function(){
 
 					} else {
 						winner = players[results.indexOf(1)];
-						winner.returnCards(round.concat(queue));
+						winner.returnCards(returnCards(queue, round));
 					}
 				 
 				} while (!loser && results.reduce(function(a,b){return a + b;},0) > 1);
 
-				 console.info(winner.name + " has won round " + counter +  "!");
+				if (!loser){
+					 console.info(winner.name + " has won round " + counter +  "!");
+					 console.info(player_1.name + " hand is " + player_1.hand);
+					 console.info(player_2.name + " hand is " + player_2.hand);
+					 console.info("******************************************");
+				}
 				
 				var won = War.Deck.isThereAWinner(players).length ? War.Deck.isThereAWinner(players)[0] : false;
 				if (won) {console.info(won.name + " just won the GAME in " + counter + " turns!!"); return;}
 			}
 
 			console.info("There is no winner afer " + counter + " turns.");
+
+			function returnCards(container, _cards){
+				var cards = War.Deck.shuffle(_cards);
+				while(cards.length){
+					container.unshift(cards.pop());
+				}
+				return container;
+			}
 		};
 
 	return play;
@@ -152,6 +167,8 @@ var player_1 = new War.Player("Larry");
 var player_2 = new War.Player("Ralph");
 
 War.Deck.deal([player_1, player_2]);
+// player_1.hand = ["9","3","A","10"];
+// player_2.hand = ["Q","2","J","10"];
 
 //console.info(player_1.hand);
 //console.info(player_2.hand);
