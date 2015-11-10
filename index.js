@@ -50,7 +50,8 @@ War.Deck = (function(){
 	// a player wins when they have all of the cards
 	function isThereAWinner(players){
 		return players.filter(function(player){
-			return player.hand.length ===  (player_1.hand.length + player_2.hand.length);//cards.length;
+			console.info(player.name + " has " + player.hand.length, cards.length);
+			return player.hand.length ===  cards.length;
 		});
 	}
 
@@ -76,7 +77,8 @@ War.Player = (function(){
 		turn: function(){
 			return this.hand.pop();
 		},
-		returnCards: function(cards){
+		returnCards: function(_cards){
+			var cards = War.Deck.shuffle(_cards);
 			while(cards.length){
 				this.hand.unshift(cards.pop());
 			}
@@ -118,7 +120,6 @@ War.Play = (function(){
 						console.info("Round " + counter + " was a tie!");
 
 						// add cards from the previous round to the queue
-						//queue = queue.concat(round);
 						returnCards(queue, round);
 
 						// add the "War" cards to the queue
@@ -126,8 +127,8 @@ War.Play = (function(){
 							queue.unshift(player.turn());
 							// if a player runs out of cards during "War" they lose
 							if (player.hand.length === 0){
-								console.info(player.name + " has run out of cards! " + player.name + " loses in " + counter + " rounds!");
-								loser = true;
+								console.info(player.name + " has run out of cards! " + player.name + " loses in " + counter + " turns!");
+								loser = player;
 							}
 						});
 
@@ -147,6 +148,7 @@ War.Play = (function(){
 				
 				var won = War.Deck.isThereAWinner(players).length ? War.Deck.isThereAWinner(players)[0] : false;
 				if (won) {console.info(won.name + " just won the GAME in " + counter + " turns!!"); return;}
+				if (loser) {console.info(loser.name + " lost the game after running out of cards in " + counter + " turns");return;};
 			}
 
 			console.info("There is no winner afer " + counter + " turns.");
@@ -167,12 +169,6 @@ var player_1 = new War.Player("Larry");
 var player_2 = new War.Player("Ralph");
 
 War.Deck.deal([player_1, player_2]);
-// player_1.hand = ["9","3","A","10"];
-// player_2.hand = ["Q","2","J","10"];
-
-//console.info(player_1.hand);
-//console.info(player_2.hand);
-
 War.Play([player_1, player_2]);
 
 
